@@ -55,6 +55,8 @@ func ignoreHttpTransportReadLoopLeak() goleak.Option {
 	return goleak.IgnoreTopFunction("net/http.(*persistConn).readLoop")
 }
 
+// Don't use this in any other method other than leaks for ClickHouse
+// These leaks are from ch-go health checking
 func ignoreBackgroundHealthCheck() goleak.Option {
 	return goleak.IgnoreTopFunction("github.com/ClickHouse/ch-go/chpool.(*Pool).backgroundHealthCheck")
 }
@@ -87,10 +89,14 @@ func VerifyGoLeaksForES(m *testing.M) {
 	goleak.VerifyTestMain(m, ignoreHttpTransportWriteLoopLeak(), ignoreHttpTransportPollRuntimeLeak(), ignoreHttpTransportReadLoopLeak())
 }
 
+// VerifyGoLeaksOnceForClickhouse is go leak check for Clickhouse integration tests
+// This must not be used anywhere else other than integration package for v2
 func VerifyGoLeaksOnceForClickhouse(t *testing.T) {
 	goleak.VerifyNone(t, IgnoreGlogFlushDaemonLeak(), IgnoreOpenCensusWorkerLeak(), IgnoreGoMetricsMeterLeak(), ignoreBackgroundHealthCheck())
 }
 
+// VerifyGoLeaksForClickhouse is go leak check for integration package in Clickhouse Environment
+// This must not be used anywhere else other than integration package in Clickhouse environment for v2
 func VerifyGoLeaksForClickhouse(m *testing.M) {
 	goleak.VerifyTestMain(m, IgnoreGlogFlushDaemonLeak(), IgnoreOpenCensusWorkerLeak(), IgnoreGoMetricsMeterLeak(), ignoreBackgroundHealthCheck())
 }
