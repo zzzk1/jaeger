@@ -86,26 +86,6 @@ func (_m *Conn) Query(ctx context.Context, query string, arg string) (client.Row
 	return r0, r1
 }
 
-// QueryRow provides a mock function with given fields: ctx, query, arg
-func (_m *Conn) QueryRow(ctx context.Context, query string, arg string) client.Row {
-	ret := _m.Called(ctx, query, arg)
-
-	if len(ret) == 0 {
-		panic("no return value specified for QueryRow")
-	}
-
-	var r0 client.Row
-	if rf, ok := ret.Get(0).(func(context.Context, string, string) client.Row); ok {
-		r0 = rf(ctx, query, arg)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(client.Row)
-		}
-	}
-
-	return r0
-}
-
 // NewConn creates a new instance of Conn. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewConn(t interface {

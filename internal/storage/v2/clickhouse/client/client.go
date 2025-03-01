@@ -7,6 +7,10 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+
+	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/client/conn"
+	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/client/pool"
 )
 
 type Pool interface {
@@ -14,8 +18,12 @@ type Pool interface {
 	Close() error
 }
 
+type Chpool interface {
+	Dial(config pool.Configuration, log *zap.Logger) (Pool, error)
+}
+
 type Conn interface {
-	QueryRow(ctx context.Context, query string, arg string) Row
+	// TODO arg should support the dyment parameter.
 	Query(ctx context.Context, query string, arg string) (Rows, error)
 	Exec(ctx context.Context, query string) error
 	Close() error
@@ -28,8 +36,6 @@ type Rows interface {
 	Err() error
 }
 
-type Row interface {
-	Err() error
-	Scan(dest ...any) error
-	ScanStruct(dest any) error
+type Clickhouse interface {
+	Open(config conn.Configuration) (Conn, error)
 }

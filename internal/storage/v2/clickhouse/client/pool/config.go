@@ -4,13 +4,8 @@
 package pool
 
 import (
-	"context"
 	"runtime"
 	"time"
-
-	"github.com/ClickHouse/ch-go"
-	"github.com/ClickHouse/ch-go/chpool"
-	"go.uber.org/zap"
 )
 
 const (
@@ -57,27 +52,4 @@ func DefaultConfig() Configuration {
 			HealthCheckPeriod: DefaultHealthCheckPeriod,
 		},
 	}
-}
-
-func NewPool(config Configuration, log *zap.Logger) (*chpool.Pool, error) {
-	option := chpool.Options{
-		ClientOptions: ch.Options{
-			Logger:   log,
-			Address:  config.ClientConfig.Address,
-			Database: config.ClientConfig.Database,
-			User:     config.ClientConfig.Username,
-			Password: config.ClientConfig.Password,
-		},
-		MaxConnLifetime:   config.PoolConfig.MaxConnLifetime,
-		MaxConnIdleTime:   config.PoolConfig.MaxConnIdleTime,
-		MinConns:          config.PoolConfig.MinConns,
-		MaxConns:          config.PoolConfig.MaxConns,
-		HealthCheckPeriod: config.PoolConfig.HealthCheckPeriod,
-	}
-
-	pool, err := chpool.Dial(context.Background(), option)
-	if err != nil {
-		return nil, err
-	}
-	return pool, nil
 }

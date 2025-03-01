@@ -5,6 +5,7 @@ package trace
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -45,6 +46,9 @@ type Writer struct {
 }
 
 func NewTraceWriter(p client.Pool, logger *zap.Logger) (*Writer, error) {
+	if p == nil {
+		return nil, errors.New("can't create trace writer with nil chPool")
+	}
 	return &Writer{Client: p, logger: logger}, nil
 }
 

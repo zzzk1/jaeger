@@ -14,7 +14,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
-	excepted := Configuration{
+	expected := Configuration{
 		ClientConfig: ClientConfig{
 			Address:  "127.0.0.1:9000",
 			Database: "default",
@@ -32,7 +32,7 @@ func TestDefaultConfig(t *testing.T) {
 
 	actual := DefaultConfig()
 	assert.NotNil(t, actual)
-	assert.Equal(t, excepted, actual)
+	assert.Equal(t, expected, actual)
 }
 
 func TestMain(m *testing.M) {

@@ -11,8 +11,6 @@ import (
 
 	"github.com/jaegertracing/jaeger/internal/storage/v2/api/tracestore"
 	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/client"
-	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/client/conn"
-	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/client/pool"
 	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/config"
 	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/schema"
 	"github.com/jaegertracing/jaeger/internal/storage/v2/clickhouse/trace"
@@ -27,20 +25,14 @@ type Factory struct {
 	chPool     client.Pool
 }
 
-func NewCHConn(cfg *config.Configuration) (client.Conn, error) {
-	connect, err := conn.NewConn(cfg.ConnConfig)
-	if err != nil {
-		return nil, err
-	}
-	return wrapper.WarpConn(connect), nil
+func newCHConn(cfg *config.Configuration) (client.Conn, error) {
+	conn, err := wrapper.WrapOpen(cfg.ConnConfig)
+	return conn, err
 }
 
 func newCHPool(cfg *config.Configuration, logger *zap.Logger) (client.Pool, error) {
-	chPool, err := pool.NewPool(cfg.PoolConfig, logger)
-	if err != nil {
-		return nil, err
-	}
-	return wrapper.WarpPool(chPool), nil
+	chPool, err := wrapper.WrapDial(cfg.PoolConfig, logger)
+	return chPool, err
 }
 
 func newClientPrerequisites(c *config.Configuration, logger *zap.Logger) error {
@@ -67,7 +59,7 @@ func NewFactory(cfg *config.Configuration, logger *zap.Logger) (*Factory, error)
 		errs = append(errs, err)
 	}
 
-	connection, err := NewCHConn(cfg)
+	connection, err := newCHConn(cfg)
 	if connection == nil {
 		errs = append(errs, err)
 	}

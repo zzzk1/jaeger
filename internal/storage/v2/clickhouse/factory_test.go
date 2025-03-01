@@ -5,6 +5,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/mock"
@@ -38,7 +39,8 @@ type mockConnBuilder struct {
 func (m *mockConnBuilder) NewConn(*config.Configuration) (client.Conn, error) {
 	if m.err == nil {
 		c := &mocks.Conn{}
-		c.On("QueryRow", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+		c.On("Query", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
+		c.On("Exec", mock.Anything, mock.Anything).Return(nil)
 		c.On("Close").Return(nil)
 		return c, nil
 	}
@@ -64,7 +66,92 @@ func TestTraceFactory(t *testing.T) {
 	_, err = f.CreateTracReader()
 	require.NoError(t, err)
 
-	require.NoError(t, f.connection.Close())
+	err = f.Purge(context.Background())
+	require.NoError(t, err)
+
+	require.NoError(t, f.Close())
+}
+
+func TestPurge(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		conn := mocks.Conn{}
+		conn.On("Exec", mock.Anything, mock.Anything).Return(nil)
+		f := newFactory()
+		f.connection = &conn
+		err := f.Purge(context.Background())
+		require.NoError(t, err)
+	})
+	t.Run("Connection refused", func(t *testing.T) {
+		conn := mocks.Conn{}
+		conn.On("Exec", mock.Anything, mock.Anything).Return(errors.New("connection refused"))
+		f := newFactory()
+		f.connection = &conn
+		err := f.Purge(context.Background())
+		require.Error(t, err, "connection refused")
+	})
+}
+
+func TestClose(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		conn := mocks.Conn{}
+		conn.On("Close").Return(nil)
+		pool := mocks.Pool{}
+		pool.On("Close").Return(nil)
+		f := newFactory()
+		f.connection = &conn
+		f.chPool = &pool
+		err := f.Close()
+		require.NoError(t, err)
+	})
+	t.Run("Close failed", func(t *testing.T) {
+		conn := mocks.Conn{}
+		conn.On("Close").Return(nil)
+		pool := mocks.Pool{}
+		pool.On("Close").Return(errors.New("chPool close error"))
+		f := newFactory()
+		f.connection = &conn
+		f.chPool = &pool
+		require.Error(t, f.Close(), "chPool close error")
+
+		conn.On("Close").Return(errors.New("clickhouse close error"))
+		require.Error(t, f.Close(), "clickhouse close error")
+	})
+}
+
+func TestCreateTraceWriter(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		pool := mocks.Pool{}
+		f := newFactory()
+		f.chPool = &pool
+		writer, err := f.CreateTraceWriter()
+		require.NoError(t, err)
+		require.NotNil(t, writer)
+	})
+	t.Run("Can't create trace writer with nil chPool", func(t *testing.T) {
+		f := newFactory()
+		f.chPool = nil
+		writer, err := f.CreateTraceWriter()
+		require.Error(t, err, "can't create trace writer with nil chPool")
+		require.Empty(t, writer)
+	})
+}
+
+func TestCreateTraceReader(t *testing.T) {
+	t.Run("Success", func(t *testing.T) {
+		c := mocks.Conn{}
+		f := newFactory()
+		f.connection = &c
+		reader, err := f.CreateTracReader()
+		require.NoError(t, err)
+		require.NotNil(t, reader)
+	})
+	t.Run("Can't create trace reader with nil clickhouse", func(t *testing.T) {
+		f := newFactory()
+		f.connection = nil
+		writer, err := f.CreateTracReader()
+		require.Error(t, err, "can't create trace reader with nil clickhouse")
+		require.Nil(t, writer)
+	})
 }
 
 func TestMain(m *testing.M) {
