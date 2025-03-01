@@ -88,27 +88,29 @@ func NewFactory(cfg *config.Configuration, logger *zap.Logger) (*Factory, error)
 	return f, nil
 }
 
-func (f Factory) CreateTraceWriter() (tracestore.Writer, error) {
+func (f *Factory) CreateTraceWriter() (tracestore.Writer, error) {
 	return trace.NewTraceWriter(f.chPool, f.logger)
 }
 
-func (f Factory) CreateTracReader() (tracestore.Reader, error) {
+func (f *Factory) CreateTracReader() (tracestore.Reader, error) {
 	return trace.NewTraceReader(f.connection)
 }
 
-func (f Factory) Purge(ctx context.Context) error {
+func (f *Factory) Purge(ctx context.Context) error {
 	err := f.connection.Exec(ctx, "truncate otel_traces")
 	return err
 }
 
-func (f Factory) Close() error {
-	var errs []error
+func (f *Factory) Close() error {
 	if f.connection != nil {
-		errs = append(errs, f.connection.Close())
+		if err := f.connection.Close(); err != nil {
+			return err
+		}
 	}
 	if f.chPool != nil {
-		errs = append(errs, f.chPool.Close())
+		if err := f.chPool.Close(); err != nil {
+			return err
+		}
 	}
-
-	return errors.Join(errs...)
+	return nil
 }

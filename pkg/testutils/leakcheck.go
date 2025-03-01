@@ -90,3 +90,7 @@ func VerifyGoLeaksForES(m *testing.M) {
 func VerifyGoLeaksOnceForClickhouse(t *testing.T) {
 	goleak.VerifyNone(t, IgnoreGlogFlushDaemonLeak(), IgnoreOpenCensusWorkerLeak(), IgnoreGoMetricsMeterLeak(), ignoreBackgroundHealthCheck())
 }
+
+func VerifyGoLeaksForClickhouse(m *testing.M) {
+	goleak.VerifyTestMain(m, IgnoreGlogFlushDaemonLeak(), IgnoreOpenCensusWorkerLeak(), IgnoreGoMetricsMeterLeak(), ignoreBackgroundHealthCheck())
+}
